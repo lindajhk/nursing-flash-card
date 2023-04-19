@@ -3,11 +3,11 @@ import pandas
 import requests
 import random
 
-
 BASE_URL = "https://www.dictionaryapi.com/api/v3/references/medical/json/"
 BACKGROUND_COLOR = "#B1DDC6"
 current_card = []
 to_learn = []
+orig_title_coords = None
 
 try:
     csv_data = pandas.read_csv("data/words_list.csv")
@@ -19,9 +19,10 @@ else:
 
 
 def next_card():
-    global current_card, flip_timer
+    global current_card, flip_timer, orig_title_coords
     window.after_cancel(flip_timer)
-
+    # Reset title position to original coordinates
+    canvas.coords(card_title, orig_title_coords)
     try:
         current_card = random.choice(to_learn.iloc[:, 0].tolist())
     except IndexError:
@@ -34,6 +35,8 @@ def next_card():
     current_card = random.choice(to_learn.iloc[:, 0].tolist())
     if 30 < len(current_card) < 20:
         font_size = 40
+    elif len(current_card) > 29:
+        font_size = 30
     else:
         font_size = 60
     canvas.itemconfig(card_title, text="Word", fill="black")
@@ -44,21 +47,43 @@ def next_card():
 
 
 def flip_card():
+    global orig_title_coords
     request_url = f"{BASE_URL}{current_card}?key={API_KEY}"
     response = requests.get(request_url)
     response.raise_for_status()
     data = response.json()
     definition = data[0]['shortdef'][0]
-    if 30 < len(definition) > 50:
+    print(definition)
+
+    # Store original title coordinates
+    orig_title_coords = canvas.coords(card_title)
+
+    # Move title up if definition is too long
+    canvas.itemconfig(card_title, text="Definition", fill="white")
+    title_coords = canvas.coords(card_title)
+    if len(definition) > 199:
+        canvas.coords(card_title, title_coords[0], title_coords[1] - 30)
+
+    if 50 < len(definition) < 120:
         font_size = 30
-    elif len(definition) > 49:
+        print(font_size)
+    elif 200 > len(definition) > 119:
+        font_size = 25
+        print(font_size)
+    elif 380 > len(definition) > 199:
         font_size = 20
+        print(font_size)
+    elif len(definition) > 379:
+        font_size = 15
+        print(font_size)
     else:
         font_size = 40
-    canvas.itemconfig(card_title, text="Definition", fill="white")
+        print(font_size)
     canvas.itemconfig(front_card_word, text="", fill="white")
     canvas.itemconfig(def_card_word, text=definition, fill="white", font=("Ariel", font_size, "bold"))
     canvas.itemconfig(card_background, image=card_back_img)
+
+
 
 
 def is_known():
@@ -85,7 +110,7 @@ window = Tk()
 window.title("Nursing Flash Card")
 window.config(padx=50, pady=50, bg=BACKGROUND_COLOR)
 
-flip_timer = window.after(3000, func=flip_card)
+flip_timer = window.after(300, func=flip_card)
 
 canvas = Canvas(width=800, height=526)
 card_front_img = PhotoImage(file="images/card_front.png")
