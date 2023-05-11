@@ -107,7 +107,7 @@ def close_program():
 
 
 window = Tk()
-window.title("Nursing Flash Card")
+window.title("Premed Flash Focus")
 window.config(padx=50, pady=50, bg=BACKGROUND_COLOR)
 
 flip_timer = window.after(300, func=flip_card)
